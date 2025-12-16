@@ -38,6 +38,25 @@ def load_data():
 df = load_data()
 
 # ======================================================
+# MISSING VALUE INFORMATION
+# ======================================================
+st.header("🔹 Informasi Missing Value")
+
+missing_count = df.isnull().sum()
+missing_percent = (missing_count / len(df)) * 100
+
+missing_df = pd.DataFrame({
+    "Jumlah Missing Value": missing_count,
+    "Persentase (%)": missing_percent.round(2)
+})
+
+# Tampilkan hanya kolom yang punya missing value
+missing_df = missing_df[missing_df["Jumlah Missing Value"] > 0]
+
+st.write("Tabel Missing Value pada Dataset:")
+st.dataframe(missing_df)
+
+# ======================================================
 # PREPROCESSING
 # ======================================================
 df.drop(columns=['Unnamed: 0'], inplace=True)
