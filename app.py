@@ -1,6 +1,6 @@
 # ======================================================
 # STREAMLIT APP: HCV DATA MINING
-# Preprocessing + Clustering + Logistic Regression
+# Preprocessing + Elbow + Silhouette + Clustering + Logistic Regression
 # ======================================================
 
 import streamlit as st
@@ -14,7 +14,7 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix, silhouette_score
 
 # ======================================================
 # STREAMLIT CONFIG
@@ -25,7 +25,7 @@ st.set_page_config(
 )
 
 st.title("📊 Data Mining Penyakit HCV")
-st.write("Preprocessing • Clustering • Logistic Regression")
+st.write("Preprocessing • Elbow Method • Silhouette Method • Clustering • Logistic Regression")
 
 # ======================================================
 # LOAD DATA
@@ -62,6 +62,40 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X_imputed)
 
 # ======================================================
+# ELBOW METHOD & SILHOUETTE METHOD
+# ======================================================
+st.header("🔹 Penentuan Jumlah Cluster Optimal")
+
+K_range = range(2, 7)
+wcss = []
+silhouette_scores = []
+
+for k in K_range:
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    labels = kmeans.fit_predict(X_scaled)
+    wcss.append(kmeans.inertia_)
+    silhouette_scores.append(silhouette_score(X_scaled, labels))
+
+# ----- Elbow Method -----
+st.subheader("📌 Elbow Method")
+
+fig_elbow, ax = plt.subplots()
+ax.plot(K_range, wcss, marker='o')
+ax.set_xlabel("Jumlah Cluster (K)")
+ax.set_ylabel("WCSS")
+ax.set_title("Elbow Method untuk Menentukan Jumlah Cluster Optimal")
+st.pyplot(fig_elbow)
+
+# ----- Silhouette Method (Tanpa Visualisasi) -----
+st.subheader("📌 Silhouette Method (Nilai Evaluasi)")
+
+for k, score in zip(K_range, silhouette_scores):
+    st.write(f"K = {k} → Silhouette Score = **{score:.4f}**")
+
+best_k = K_range[silhouette_scores.index(max(silhouette_scores))]
+st.success(f"Jumlah cluster optimal berdasarkan Silhouette Score adalah **K = {best_k}**")
+
+# ======================================================
 # SIDEBAR CONTROL
 # ======================================================
 st.sidebar.header("⚙️ Pengaturan")
@@ -70,7 +104,7 @@ n_clusters = st.sidebar.slider(
     "Jumlah Cluster (K-Means)",
     min_value=2,
     max_value=6,
-    value=4
+    value=best_k
 )
 
 test_size = st.sidebar.slider(
@@ -94,9 +128,8 @@ df['Cluster'] = cluster_labels
 pca = PCA(n_components=2)
 X_pca = pca.fit_transform(X_scaled)
 
-# Plot clustering
 fig_cluster, ax = plt.subplots()
-scatter = ax.scatter(
+ax.scatter(
     X_pca[:, 0],
     X_pca[:, 1],
     c=cluster_labels
@@ -127,7 +160,6 @@ model = LogisticRegression(max_iter=1000)
 model.fit(X_train, y_train)
 
 y_pred = model.predict(X_test)
-
 accuracy = accuracy_score(y_test, y_pred)
 
 st.write(f"### 🎯 Akurasi Model: **{accuracy:.2f}**")
@@ -136,8 +168,7 @@ st.write(f"### 🎯 Akurasi Model: **{accuracy:.2f}**")
 cm = confusion_matrix(y_test, y_pred)
 
 fig_cm, ax = plt.subplots()
-im = ax.imshow(cm)
-
+ax.imshow(cm)
 ax.set_title("Confusion Matrix")
 ax.set_xlabel("Predicted Label")
 ax.set_ylabel("True Label")
@@ -152,4 +183,4 @@ st.pyplot(fig_cm)
 # FOOTER
 # ======================================================
 st.markdown("---")
-st.caption("Data Mining HCV • K-Means • Logistic Regression • Streamlit")
+st.caption("Data Mining HCV • Elbow Method • Silhouette Method • K-Means • Logistic Regression • Streamlit")
